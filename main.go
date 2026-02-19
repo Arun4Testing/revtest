@@ -9,27 +9,15 @@ import (
 	rtctokenbuilder "github.com/AgoraIO-Community/go-tokenbuilder/rtctokenbuilder"
 	rtmtokenbuilder "github.com/AgoraIO-Community/go-tokenbuilder/rtmtokenbuilder"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 )
 
 var appID string
 var appCertificate string
 
-func init() {
-	// Load .env file for local development only
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("No .env file found (this is fine in production)")
-	}
-}
-
 func main() {
-	appID = os.Getenv("APP_ID")
-	appCertificate = os.Getenv("APP_CERTIFICATE")
 
-	if appID == "" || appCertificate == "" {
-		log.Fatal("APP_ID or APP_CERTIFICATE missing")
-	}
+	appID = "62aeb77b6c704c79919ac9852bc4e24b"
+	appCertificate =  "b92d623a025a499eab5e30f5396a01e2"
 
 	r := gin.Default()
 	r.Use(nocache())
@@ -39,7 +27,7 @@ func main() {
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080" // local fallback
+		port = "8080"
 	}
 
 	log.Println("Server running on port:", port)
