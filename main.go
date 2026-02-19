@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"os"
-	"strconv"
 	"time"
 
 	rtctokenbuilder "github.com/AgoraIO-Community/go-tokenbuilder/rtctokenbuilder"
@@ -15,14 +14,17 @@ var appID string
 var appCertificate string
 
 func main() {
-
+	// Hardcoded App ID and Certificate
 	appID = "62aeb77b6c704c79919ac9852bc4e24b"
-	appCertificate =  "b92d623a025a499eab5e30f5396a01e2"
+	appCertificate = "b92d623a025a499eab5e30f5396a01e2"
 
 	r := gin.Default()
 	r.Use(nocache())
 
+	// RTC token for publisher/subscriber
 	r.GET("/rtc/:channel/:role/:uid", getRtcToken)
+
+	// RTM token
 	r.GET("/rtm/:uid", getRtmToken)
 
 	port := os.Getenv("PORT")
@@ -34,6 +36,7 @@ func main() {
 	r.Run(":" + port)
 }
 
+// No cache middleware
 func nocache() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
@@ -41,17 +44,11 @@ func nocache() gin.HandlerFunc {
 	}
 }
 
+// RTC token generator for userAccount
 func getRtcToken(c *gin.Context) {
 	channel := c.Param("channel")
 	roleStr := c.Param("role")
-	uidStr := c.Param("uid")
-
-	uid64, err := strconv.ParseUint(uidStr, 10, 32)
-	if err != nil {
-		c.JSON(400, gin.H{"error": "invalid uid"})
-		return
-	}
-	uid := uint32(uid64)
+	userAccount := c.Param("uid") // string UID
 
 	expire := uint32(time.Now().Unix() + 3600)
 
@@ -62,11 +59,11 @@ func getRtcToken(c *gin.Context) {
 		role = rtctokenbuilder.RoleSubscriber
 	}
 
-	token, err := rtctokenbuilder.BuildTokenWithUid(
+	token, err := rtctokenbuilder.BuildTokenWithUserAccount(
 		appID,
 		appCertificate,
 		channel,
-		uid,
+		userAccount,
 		role,
 		expire,
 	)
@@ -81,15 +78,16 @@ func getRtcToken(c *gin.Context) {
 	})
 }
 
+// RTM token generator
 func getRtmToken(c *gin.Context) {
-	uid := c.Param("uid")
+	userAccount := c.Param("uid")
 
 	expire := uint32(time.Now().Unix() + 3600)
 
 	token, err := rtmtokenbuilder.BuildToken(
 		appID,
 		appCertificate,
-		uid,
+		userAccount,
 		expire,
 		"", // required salt
 	)
