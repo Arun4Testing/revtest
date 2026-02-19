@@ -16,11 +16,10 @@ var appID string
 var appCertificate string
 
 func init() {
-	os.Setenv("APP_ID", "62aeb77b6c704c79919ac9852bc4e24b")
-	os.Setenv("APP_CERTIFICATE", "b92d623a025a499eab5e30f5396a01e2")
-
-	if err := godotenv.Load(); err != nil {
-		log.Print("No .env file found")
+	// Load .env file for local development only
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("No .env file found (this is fine in production)")
 	}
 }
 
@@ -38,7 +37,13 @@ func main() {
 	r.GET("/rtc/:channel/:role/:uid", getRtcToken)
 	r.GET("/rtm/:uid", getRtmToken)
 
-	r.Run(":8080")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // local fallback
+	}
+
+	log.Println("Server running on port:", port)
+	r.Run(":" + port)
 }
 
 func nocache() gin.HandlerFunc {
@@ -93,13 +98,12 @@ func getRtmToken(c *gin.Context) {
 
 	expire := uint32(time.Now().Unix() + 3600)
 
-	// NEW: requires salt string (can be empty "")
 	token, err := rtmtokenbuilder.BuildToken(
 		appID,
 		appCertificate,
 		uid,
 		expire,
-		"", // salt (required in v1.3.0)
+		"", // required salt
 	)
 
 	if err != nil {
