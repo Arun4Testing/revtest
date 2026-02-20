@@ -68,14 +68,14 @@ func getRtcToken(c *gin.Context) {
 	}
 
 	//  IMPORTANT: Use BuildTokenWithUserAccount
-	token, err := rtctokenbuilder.BuildTokenWithUserAccount(
-		appID,
-		appCertificate,
-		channel,
-		userAccount,
-		role,
-		expire,
-	)
+token, err := rtctokenbuilder.BuildTokenWithAccount(
+	appID,
+	appCertificate,
+	channel,
+	userAccount,
+	role,
+	expire,
+)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
