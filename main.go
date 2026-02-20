@@ -1,7 +1,6 @@
 package main
 
 import (
-	"hash/fnv"
 	"log"
 	"net/http"
 	"os"
@@ -12,21 +11,23 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Read from environment variables
 var appID = "62aeb77b6c704c79919ac9852bc4e24b"
 var appCertificate = "b92d623a025a499eab5e30f5396a01e2"
 
-// Converts string user ID to numeric UID for Agora
-func uidFromString(s string) uint32 {
-	h := fnv.New32a()
-	h.Write([]byte(s))
-	return h.Sum32()
-}
-
 func main() {
-	r := gin.Default()
-	r.Use(nocache())
 
+	if appID == "" || appCertificate == "" {
+		log.Fatal("AGORA_APP_ID or AGORA_APP_CERTIFICATE not set in environment")
+	}
+
+	r := gin.Default()
+	r.Use(corsMiddleware())
+
+	// RTC token using USER ACCOUNT (string UID)
 	r.GET("/rtc/:channel/:role/:uid", getRtcToken)
+
+	// RTM token
 	r.GET("/rtm/:uid", getRtmToken)
 
 	port := os.Getenv("PORT")
@@ -40,19 +41,22 @@ func main() {
 	}
 }
 
-func nocache() gin.HandlerFunc {
+func corsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Headers", "Content-Type")
+		c.Header("Access-Control-Allow-Methods", "GET")
 		c.Next()
 	}
 }
 
+// ---------------- RTC TOKEN ----------------
+
 func getRtcToken(c *gin.Context) {
+
 	channel := c.Param("channel")
 	roleStr := c.Param("role")
-	uidStr := c.Param("uid")
-
-	uid := uidFromString(uidStr) // Convert string user ID to uint32
+	userAccount := c.Param("uid")
 
 	expire := uint32(time.Now().Unix() + 3600)
 
@@ -63,11 +67,12 @@ func getRtcToken(c *gin.Context) {
 		role = rtctokenbuilder.RoleSubscriber
 	}
 
-	token, err := rtctokenbuilder.BuildTokenWithUid(
+	//  IMPORTANT: Use BuildTokenWithUserAccount
+	token, err := rtctokenbuilder.BuildTokenWithUserAccount(
 		appID,
 		appCertificate,
 		channel,
-		uid,
+		userAccount,
 		role,
 		expire,
 	)
@@ -82,17 +87,19 @@ func getRtcToken(c *gin.Context) {
 	})
 }
 
-func getRtmToken(c *gin.Context) {
-	uid := c.Param("uid")
+// ---------------- RTM TOKEN ----------------
 
+func getRtmToken(c *gin.Context) {
+
+	userAccount := c.Param("uid")
 	expire := uint32(time.Now().Unix() + 3600)
 
 	token, err := rtmtokenbuilder.BuildToken(
 		appID,
 		appCertificate,
-		uid,
+		userAccount,
 		expire,
-		"", // required salt
+		"",
 	)
 
 	if err != nil {
