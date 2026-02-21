@@ -41,11 +41,29 @@ func main() {
 	}
 }
 
+// func corsMiddleware() gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		c.Header("Access-Control-Allow-Origin", "*")
+// 		c.Header("Access-Control-Allow-Headers", "Content-Type")
+// 		c.Header("Access-Control-Allow-Methods", "GET")
+// 		c.Next()
+// 	}
+// }
+
 func corsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Headers", "Content-Type")
-		c.Header("Access-Control-Allow-Methods", "GET")
+
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+
+		// Handle preflight request
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(200)
+			return
+		}
+
 		c.Next()
 	}
 }
